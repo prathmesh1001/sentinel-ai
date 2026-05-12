@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import random
-from chatbot import register_chatbot
+from backend.chatbot import register_chatbot
 
 # ===============================
 # PATH SETUP
