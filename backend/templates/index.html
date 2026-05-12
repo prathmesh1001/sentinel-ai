@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SENTINEL — AI Device Health Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="sentinel-logo">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="22,2 42,12 42,32 22,42 2,32 2,12" fill="none" stroke="#00D1FF" stroke-width="1.5" opacity="0.7"/>
+          <polygon points="22,8 36,15 36,29 22,36 8,29 8,15" fill="none" stroke="#00D1FF" stroke-width="1" opacity="0.4"/>
+          <circle cx="22" cy="22" r="7" fill="rgba(0,209,255,0.1)" stroke="#00D1FF" stroke-width="1.5"/>
+          <circle cx="22" cy="22" r="3" fill="#00D1FF"/>
+          <line x1="22" y1="2"  x2="22" y2="8"  stroke="#00D1FF" stroke-width="1.5" opacity="0.6"/>
+          <line x1="22" y1="36" x2="22" y2="42" stroke="#00D1FF" stroke-width="1.5" opacity="0.6"/>
+          <line x1="42" y1="22" x2="36" y2="22" stroke="#00D1FF" stroke-width="1.5" opacity="0.6"/>
+          <line x1="2"  y1="22" x2="8"  y2="22" stroke="#00D1FF" stroke-width="1.5" opacity="0.6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="title">SENTINEL</div>
+        <div class="subtitle">AI-BASED DEVICE HEALTH MONITORING SYSTEM · v2.4.1</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE FEED</div>
+      <div class="timestamp" id="ts">--:--:-- UTC</div>
+    </div>
+  </header>
+
+  <!-- DEVICE SELECTOR -->
+  <div class="device-selector">
+    <button class="dev-btn active" id="btn-rpi" onclick="selectDevice('rpi')">
+      <span class="dev-icon">◈</span>RASPBERRY PI 4B
+    </button>
+    <button class="dev-btn" id="btn-jetson" onclick="selectDevice('jetson')">
+      <span class="dev-icon">▣</span>NVIDIA JETSON NANO
+    </button>
+  </div>
+
+  <!-- MAIN PANEL -->
+  <div class="main-panel">
+
+    <!-- ROW 1: 4 Metric Cards -->
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <!-- ROW 2: Health Orb + Charts (4 cols total) -->
+    <div class="middle-row">
+
+      <!-- Health Orb -->
+      <div class="health-panel ok" id="health-panel">
+        <div class="health-panel-title">SYSTEM HEALTH</div>
+        <div class="health-orb-wrap">
+          <div class="health-orb" id="health-orb">
+            <div class="h-ring1"></div>
+            <div class="h-ring2"></div>
+            <div class="health-text" id="health-text">NORMAL</div>
+            <div class="health-sub"  id="health-sub">ALL SYSTEMS GO</div>
+          </div>
+        </div>
+        <div class="hmm" id="hmm"></div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-col">
+        <div class="graph-card">
+          <div class="graph-title">TEMPERATURE TREND <span>40s</span></div>
+          <div class="graph-legend">
+            <span class="leg cy">● CPU</span>
+            <span class="leg gn">- - GPU</span>
+          </div>
+          <div class="graph-wrap"><canvas id="tempChart"></canvas></div>
+        </div>
+        <div class="graph-card">
+          <div class="graph-title">USAGE TREND <span>40s</span></div>
+          <div class="graph-legend">
+            <span class="leg cy">● CPU%</span>
+            <span class="leg am">- - GPU%</span>
+          </div>
+          <div class="graph-wrap"><canvas id="usageChart"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ROW 3: ML + Device Info + Alerts -->
+    <div class="bottom-row">
+
+      <!-- ML Prediction -->
+      <div class="ml-card">
+        <div class="card-title">ML HEALTH PREDICTION</div>
+        <div class="ml-conf-label">CONFIDENCE SCORE</div>
+        <div class="ml-score" id="ml-score">--%</div>
+        <div class="ml-engine">Random Forest · XGBoost</div>
+        <div class="frb-wrap">
+          <div class="frb-header">
+            <span>FAILURE RISK</span>
+            <span id="risk-pct">--%</span>
+          </div>
+          <div class="frb-track">
+            <div class="frb-fill" id="risk-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="ml-pred-label" id="ml-pred-label">AWAITING DATA</div>
+      </div>
+
+      <!-- Device Telemetry -->
+      <div class="info-card">
+        <div class="card-title">DEVICE TELEMETRY</div>
+        <div class="info-row"><span class="info-key">DEVICE ID</span>  <span class="info-val" id="dev-id">RPi-4B-001</span></div>
+        <div class="info-row"><span class="info-key">MODEL</span>      <span class="info-val" id="dev-model">RPi 4 Model B</span></div>
+        <div class="info-row"><span class="info-key">OS</span>         <span class="info-val" id="dev-os">Raspbian 11</span></div>
+        <div class="info-row"><span class="info-key">UPTIME</span>     <span class="info-val" id="uptime">3d 14h 22m</span></div>
+        <div class="info-row"><span class="info-key">FIRMWARE</span>   <span class="info-val">v1.20230612</span></div>
+        <div class="info-row"><span class="info-key">DATA SOURCE</span><span class="info-val">DATASET</span></div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="alerts-card">
+        <div class="card-title">ACTIVE ALERTS</div>
+        <div class="alert-list" id="alert-list">
+          <div class="alert-item ok"><div class="adot"></div>Initializing sensors...</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /main-panel -->
+
+  <!-- CHAT PANEL (sticky right column) -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-title-row">
+        <div class="chat-title"><div class="chat-ai-dot"></div>SENTINEL AI</div>
+        <div class="chat-status">● ONLINE</div>
+      </div>
+    </div>
+    <div class="chat-actions">
+      <button class="quick-btn" onclick="quickAction('status')">[ STATUS ]</button>
+      <button class="quick-btn" onclick="quickAction('why')">[ WHY ISSUE ]</button>
+      <button class="quick-btn" onclick="quickAction('ttf')">[ TIME TO FAIL ]</button>
+      <button class="quick-btn" onclick="quickAction('fix')">[ FIX ]</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" type="text"
+             placeholder="Ask about device health..."
+             onkeydown="if(event.key==='Enter') sendChat()" />
+      <button class="chat-send" onclick="sendChat()">SEND ▶</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}?v=3"></script>
+
+</body>
+</html>
